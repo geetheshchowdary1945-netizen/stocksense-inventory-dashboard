@@ -1,0 +1,6 @@
+{
+  "name": "StockSense",
+  "description": "Inventory management system for small businesses to track stock levels, calculate replenishment points, and manage suppliers.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

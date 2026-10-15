@@ -1,0 +1,134 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "An inventory item tracked by the business",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 150 },
+        "sku": { "type": "string", "maxLength": 60 },
+        "category": { "type": "string", "maxLength": 60 },
+        "quantity": { "type": "number" },
+        "unitPrice": { "type": "number" },
+        "costPrice": { "type": "number" },
+        "reorderLevel": { "type": "number" },
+        "supplierId": { "type": "string", "maxLength": 100 },
+        "supplierName": { "type": "string", "maxLength": 150 },
+        "status": { "type": "string", "enum": ["In Stock", "Low Stock", "Out of Stock", "Overstock"] },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["name", "sku", "category", "quantity", "unitPrice", "costPrice", "reorderLevel"]
+    },
+    "Sale": {
+      "title": "Sale",
+      "description": "A recorded sales transaction that decrements stock",
+      "type": "object",
+      "properties": {
+        "productId": { "type": "string", "maxLength": 100 },
+        "productName": { "type": "string", "maxLength": 150 },
+        "quantity": { "type": "number" },
+        "unitPrice": { "type": "number" },
+        "totalAmount": { "type": "number" },
+        "date": { "type": "string" },
+        "notes": { "type": "string", "maxLength": 300 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["productId", "productName", "quantity", "unitPrice", "totalAmount", "date"]
+    },
+    "Supplier": {
+      "title": "Supplier",
+      "description": "A vendor supplying inventory goods",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 150 },
+        "phone": { "type": "string", "maxLength": 30 },
+        "email": { "type": "string", "maxLength": 120 },
+        "whatsapp": { "type": "string", "maxLength": 30 },
+        "leadTimeDays": { "type": "number" },
+        "notes": { "type": "string", "maxLength": 300 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["name", "email", "leadTimeDays"]
+    },
+    "PurchaseOrder": {
+      "title": "PurchaseOrder",
+      "description": "An order placed with a supplier that increments stock upon receipt",
+      "type": "object",
+      "properties": {
+        "orderNumber": { "type": "string", "maxLength": 60 },
+        "productId": { "type": "string", "maxLength": 100 },
+        "productName": { "type": "string", "maxLength": 150 },
+        "supplierId": { "type": "string", "maxLength": 100 },
+        "supplierName": { "type": "string", "maxLength": 150 },
+        "quantity": { "type": "number" },
+        "unitCost": { "type": "number" },
+        "totalCost": { "type": "number" },
+        "expectedDelivery": { "type": "string" },
+        "status": { "type": "string", "enum": ["Pending", "Shipped", "Received", "Cancelled"] },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" },
+        "receivedAt": { "type": "string" }
+      },
+      "required": ["orderNumber", "productId", "productName", "supplierId", "quantity", "unitCost", "status"]
+    },
+    "Alert": {
+      "title": "Alert",
+      "description": "In-app and notification alerts for low-stock or critical inventory status",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["low_stock", "out_of_stock", "overstock", "order_delayed"] },
+        "productId": { "type": "string", "maxLength": 100 },
+        "productName": { "type": "string", "maxLength": 150 },
+        "message": { "type": "string", "maxLength": 300 },
+        "severity": { "type": "string", "enum": ["warning", "danger", "info"] },
+        "status": { "type": "string", "enum": ["unread", "read", "dismissed"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["type", "productId", "productName", "message", "severity", "status"]
+    },
+    "Settings": {
+      "title": "Settings",
+      "description": "User notification preferences and business parameters",
+      "type": "object",
+      "properties": {
+        "alertEmail": { "type": "string", "maxLength": 120 },
+        "alertPhone": { "type": "string", "maxLength": 30 },
+        "alertWhatsapp": { "type": "string", "maxLength": 30 },
+        "emailEnabled": { "type": "boolean" },
+        "smsEnabled": { "type": "boolean" },
+        "whatsappEnabled": { "type": "boolean" },
+        "inAppEnabled": { "type": "boolean" },
+        "safetyStockPercent": { "type": "number" },
+        "updatedAt": { "type": "string" }
+      }
+    }
+  },
+  "firestore": {
+    "/users/{userId}/products/{productId}": {
+      "schema": "Product",
+      "description": "Collection of products owned by the business user"
+    },
+    "/users/{userId}/sales/{saleId}": {
+      "schema": "Sale",
+      "description": "Recorded sales history for stock transactions"
+    },
+    "/users/{userId}/suppliers/{supplierId}": {
+      "schema": "Supplier",
+      "description": "Supplier contacts and lead times for the business"
+    },
+    "/users/{userId}/purchaseOrders/{orderId}": {
+      "schema": "PurchaseOrder",
+      "description": "Purchase orders for replenishing inventory"
+    },
+    "/users/{userId}/alerts/{alertId}": {
+      "schema": "Alert",
+      "description": "System and trigger alerts for inventory thresholds"
+    },
+    "/users/{userId}/settings/{settingId}": {
+      "schema": "Settings",
+      "description": "Business settings and notification preferences"
+    }
+  }
+}

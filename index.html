@@ -1,0 +1,999 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>StockSense</title>
+    <meta name="description" content="Inventory management system for small businesses to track stock levels, calculate replenishment points, and manage suppliers." />
+    <meta property="og:title" content="StockSense" />
+    <meta property="og:description" content="Inventory management system for small businesses to track stock levels, calculate replenishment points, and manage suppliers." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- Chart.js via CDN as specified in prompt -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+
+    <!-- Custom Pure CSS -->
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <!-- Toast notification container -->
+    <div id="toast-container"></div>
+
+    <!-- Backdrop for mobile drawer -->
+    <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
+
+    <div id="app-root">
+      <!-- Sidebar Navigation -->
+      <aside id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+          <a href="#" class="brand" id="brand-link">
+            <div class="brand-icon">SS</div>
+            <span>StockSense</span>
+          </a>
+        </div>
+
+        <nav class="sidebar-nav">
+          <div class="nav-section-title">Operations</div>
+          <button class="nav-item active" data-tab="dashboard">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
+            <span>Dashboard</span>
+            <span id="nav-alert-badge" class="nav-badge" style="display: none;">0</span>
+          </button>
+          
+          <button class="nav-item" data-tab="products">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+            <span>Products & Stock</span>
+          </button>
+
+          <button class="nav-item" data-tab="sales">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+            <span>Sales History</span>
+          </button>
+
+          <div class="nav-section-title">Supply Chain</div>
+          <button class="nav-item" data-tab="reorders">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h5l3 5 5-11 3 6h4"></path></svg>
+            <span>Reorder Forecast</span>
+          </button>
+
+          <button class="nav-item" data-tab="orders">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+            <span>Purchase Orders</span>
+          </button>
+
+          <button class="nav-item" data-tab="suppliers">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            <span>Suppliers</span>
+          </button>
+
+          <div class="nav-section-title">Configuration</div>
+          <button class="nav-item" data-tab="settings">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+            <span>Alerts & Settings</span>
+          </button>
+
+          <button class="nav-item" data-tab="deployment">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+            <span>Firebase & Deploy</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div class="user-badge">
+            <div class="user-avatar" id="user-avatar">SS</div>
+            <div class="user-info">
+              <div class="user-email" id="user-email-display">demo@stocksense.app</div>
+              <div class="user-status">
+                <span class="status-dot demo" id="status-dot"></span>
+                <span id="auth-status-text">Demo Business</span>
+              </div>
+            </div>
+          </div>
+          <button id="btn-logout" class="btn btn-secondary btn-sm" style="width: 100%;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+            <span>Sign Out / Switch</span>
+          </button>
+        </div>
+      </aside>
+
+      <!-- Main App Content -->
+      <main class="main-wrapper">
+        <!-- Top Sticky Header -->
+        <header class="top-header">
+          <div class="header-left">
+            <button id="mobile-toggle-btn" class="mobile-toggle" aria-label="Toggle navigation">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            </button>
+            <h1 class="page-title" id="page-heading">Dashboard</h1>
+          </div>
+
+          <div class="header-actions">
+            <!-- Sample Data Loader -->
+            <button id="btn-load-sample-data" class="btn btn-secondary btn-sm" title="Populate demo products, sales, and suppliers">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              <span>Load Sample Data</span>
+            </button>
+
+            <!-- Record Sale Shortcut -->
+            <button id="btn-quick-sale" class="btn btn-success btn-sm">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+              <span>Record Sale</span>
+            </button>
+
+            <!-- Add Product Shortcut -->
+            <button id="btn-quick-add-product" class="btn btn-primary btn-sm">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              <span>Add Product</span>
+            </button>
+          </div>
+        </header>
+
+        <!-- Dynamic Page Tabs Container -->
+        <div class="page-container">
+
+          <!-- Global In-App Alert Banner (Dynamic) -->
+          <div id="dashboard-alert-banner" class="in-app-alert-banner" style="display: none;">
+            <div class="in-app-alert-content">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+              <div id="dashboard-alert-text">Attention: You have low-stock items that have breached their reorder threshold!</div>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+              <button id="btn-banner-view-reorders" class="btn btn-sm btn-secondary">Review Forecast</button>
+              <button id="btn-banner-dismiss" class="btn btn-sm btn-secondary btn-icon-only" title="Dismiss">&times;</button>
+            </div>
+          </div>
+
+          <!-- ================= TAB 1: DASHBOARD ================= -->
+          <section id="tab-dashboard" class="tab-pane active">
+            <!-- Key Metric Cards -->
+            <div class="stats-grid">
+              <div class="stat-card">
+                <div class="stat-info">
+                  <span class="stat-label">Total Products</span>
+                  <span class="stat-value" id="stat-total-products">0</span>
+                  <span class="stat-meta" id="stat-total-units">0 total units stored</span>
+                </div>
+                <div class="stat-icon primary">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-info">
+                  <span class="stat-label">Total Stock Value</span>
+                  <span class="stat-value" id="stat-total-value">$0.00</span>
+                  <span class="stat-meta" id="stat-retail-value">Retail value: $0.00</span>
+                </div>
+                <div class="stat-icon success">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-info">
+                  <span class="stat-label">Low Stock Alerts</span>
+                  <span class="stat-value" id="stat-low-stock-count" style="color: var(--danger);">0</span>
+                  <span class="stat-meta">Items at or below reorder level</span>
+                </div>
+                <div class="stat-icon warning">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-info">
+                  <span class="stat-label">Pending Orders</span>
+                  <span class="stat-value" id="stat-pending-orders">0</span>
+                  <span class="stat-meta" id="stat-pending-orders-val">Awaiting supplier delivery</span>
+                </div>
+                <div class="stat-icon purple">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+                </div>
+              </div>
+            </div>
+
+            <!-- Two Column Chart & Top Sellers Grid -->
+            <div class="dashboard-grid">
+              <!-- Sales Trend Chart (Last 30 Days) -->
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-title">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                    <span>Sales Trend (Last 30 Days)</span>
+                  </div>
+                  <span class="badge badge-neutral" id="chart-total-revenue">$0 total sales</span>
+                </div>
+                <div class="card-body">
+                  <div style="position: relative; height: 280px; width: 100%;">
+                    <canvas id="salesTrendChart"></canvas>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Top 5 Selling Products -->
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-title">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                    <span>Top 5 Selling Products</span>
+                  </div>
+                </div>
+                <div class="card-body" style="padding: 0;">
+                  <div id="top-products-list">
+                    <!-- Populated by JS -->
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Active Low Stock & Urgent Items Table -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path></svg>
+                  <span>Critical Stock & Reorder Alerts</span>
+                </div>
+                <button class="btn btn-outline-primary btn-sm" id="btn-goto-reorders">
+                  View Full Reorder Plan &rarr;
+                </button>
+              </div>
+              <div class="card-body" style="padding: 0;">
+                <div class="table-responsive">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Product</th>
+                        <th>SKU</th>
+                        <th>Current Units</th>
+                        <th>Reorder Level</th>
+                        <th>Supplier</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody id="dashboard-critical-stock-body">
+                      <!-- Populated dynamically -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ================= TAB 2: PRODUCTS / STOCK ================= -->
+          <section id="tab-products" class="tab-pane">
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+                  <span>Inventory Catalog & Stock Levels</span>
+                </div>
+                <div style="display: flex; gap: 0.5rem;">
+                  <button class="btn btn-primary btn-sm" id="btn-add-product-modal">
+                    + Add New Product
+                  </button>
+                </div>
+              </div>
+              <div class="card-body">
+                <!-- Search & Filters -->
+                <div class="filter-bar">
+                  <div class="search-input-wrapper">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="products-search-input" placeholder="Search by name, SKU, or category..." />
+                  </div>
+                  <div class="filter-group">
+                    <select id="products-filter-category" class="form-select">
+                      <option value="all">All Categories</option>
+                    </select>
+                    <select id="products-filter-status" class="form-select">
+                      <option value="all">All Statuses</option>
+                      <option value="In Stock">In Stock</option>
+                      <option value="Low Stock">Low Stock</option>
+                      <option value="Out of Stock">Out of Stock</option>
+                      <option value="Overstock">Overstock</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Products Table -->
+                <div class="table-responsive">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Product Name</th>
+                        <th>SKU</th>
+                        <th>Category</th>
+                        <th>Quantity</th>
+                        <th>Unit Price</th>
+                        <th>Cost Price</th>
+                        <th>Reorder Level</th>
+                        <th>Status</th>
+                        <th>Supplier</th>
+                        <th style="text-align: right;">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="products-table-body">
+                      <!-- Rendered by JS -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ================= TAB 3: SALES ================= -->
+          <section id="tab-sales" class="tab-pane">
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                  <span>Sales Orders & Revenue History</span>
+                </div>
+                <button class="btn btn-success btn-sm" id="btn-record-sale-modal">
+                  + Record New Sale
+                </button>
+              </div>
+              <div class="card-body">
+                <div class="filter-bar">
+                  <div class="search-input-wrapper">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="sales-search-input" placeholder="Filter by product name..." />
+                  </div>
+                  <div class="filter-group">
+                    <input type="date" id="sales-filter-start-date" class="form-input" title="From Date" />
+                    <span style="color: var(--slate-400);">to</span>
+                    <input type="date" id="sales-filter-end-date" class="form-input" title="To Date" />
+                    <button id="btn-sales-clear-filters" class="btn btn-secondary btn-sm">Reset</button>
+                  </div>
+                </div>
+
+                <div class="table-responsive">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Product</th>
+                        <th>Quantity Sold</th>
+                        <th>Unit Price</th>
+                        <th>Total Revenue</th>
+                        <th>Notes</th>
+                      </tr>
+                    </thead>
+                    <tbody id="sales-table-body">
+                      <!-- Rendered by JS -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ================= TAB 4: REORDER RECOMMENDATIONS ================= -->
+          <section id="tab-reorders" class="tab-pane">
+            <!-- Educational Formula Guide -->
+            <div class="reorder-guide">
+              <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+                <div>
+                  <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--primary);">Smart Replenishment & Reorder Formulas</h3>
+                  <p style="font-size: 0.85rem; color: var(--slate-600);">StockSense eliminates stockouts and overstock by dynamically computing daily demand velocities and supplier lead times.</p>
+                </div>
+                <span class="badge badge-instock">Automated Math Engine</span>
+              </div>
+              
+              <div class="formula-grid">
+                <div class="formula-pill">
+                  <div class="formula-title">1. Average Daily Sales (ADS)</div>
+                  <div class="formula-code">ADS = Units Sold Last 30 Days / 30</div>
+                  <div class="formula-desc">Measures how quickly this specific item moves off your shelves.</div>
+                </div>
+
+                <div class="formula-pill">
+                  <div class="formula-title">2. Reorder Point (ROP)</div>
+                  <div class="formula-code">ROP = (ADS × Supplier Lead Time) + 20% Safety Buffer</div>
+                  <div class="formula-desc">When current inventory drops below this threshold, an order must be placed immediately.</div>
+                </div>
+
+                <div class="formula-pill">
+                  <div class="formula-title">3. Suggested Order Quantity</div>
+                  <div class="formula-code">Qty = [ADS × (Lead Time + 14 Days Cover)] - Current Stock</div>
+                  <div class="formula-desc">Replenishes enough inventory to sustain lead time plus a two-week operational buffer.</div>
+                </div>
+
+                <div class="formula-pill">
+                  <div class="formula-title">4. Slow-Mover / Overstock Risk</div>
+                  <div class="formula-code">Stock > (ADS × 60 Days) OR 0 Sales with >20 Stock</div>
+                  <div class="formula-desc">Highlights items that tie up cash and may require clearance discounting.</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Reorder Recommendations Table -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h5l3 5 5-11 3 6h4"></path></svg>
+                  <span>Dynamic Reorder Recommendations</span>
+                </div>
+              </div>
+              <div class="card-body" style="padding: 0;">
+                <div class="table-responsive">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Product</th>
+                        <th>Current Stock</th>
+                        <th>Avg Daily Sales (30d)</th>
+                        <th>Supplier Lead Time</th>
+                        <th>Calculated Reorder Point</th>
+                        <th>Suggested Reorder Qty</th>
+                        <th>Condition / Risk</th>
+                        <th style="text-align: right;">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody id="reorder-recommendations-table-body">
+                      <!-- Rendered by JS -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ================= TAB 5: PURCHASE ORDERS ================= -->
+          <section id="tab-orders" class="tab-pane">
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+                  <span>Supplier Purchase Orders</span>
+                </div>
+                <button class="btn btn-primary btn-sm" id="btn-create-order-modal">
+                  + Create Purchase Order
+                </button>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Order #</th>
+                        <th>Product</th>
+                        <th>Supplier</th>
+                        <th>Quantity</th>
+                        <th>Total Cost</th>
+                        <th>Expected Delivery</th>
+                        <th>Status</th>
+                        <th style="text-align: right;">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="purchase-orders-table-body">
+                      <!-- Rendered by JS -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ================= TAB 6: SUPPLIERS ================= -->
+          <section id="tab-suppliers" class="tab-pane">
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                  <span>Supplier Directory</span>
+                </div>
+                <button class="btn btn-primary btn-sm" id="btn-add-supplier-modal">
+                  + Add New Supplier
+                </button>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Supplier Name</th>
+                        <th>Contact Email</th>
+                        <th>Phone</th>
+                        <th>WhatsApp</th>
+                        <th>Lead Time</th>
+                        <th>Notes</th>
+                        <th style="text-align: right;">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="suppliers-table-body">
+                      <!-- Rendered by JS -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ================= TAB 7: ALERTS & SETTINGS ================= -->
+          <section id="tab-settings" class="tab-pane">
+            <div class="dashboard-grid">
+              <!-- Notification Channels -->
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-title">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                    <span>Automated Notification Settings</span>
+                  </div>
+                </div>
+                <div class="card-body">
+                  <form id="settings-form">
+                    <div class="form-group">
+                      <label class="form-label">Alert Recipient Email</label>
+                      <input type="email" id="setting-alert-email" class="form-input" placeholder="inventory-manager@business.com" />
+                      <span class="form-helper">Dispatches email triggers when stock reaches reorder level</span>
+                    </div>
+
+                    <div class="form-group">
+                      <label class="form-label">Alert SMS Phone Number</label>
+                      <input type="tel" id="setting-alert-phone" class="form-input" placeholder="+1234567890" />
+                      <span class="form-helper">For critical out-of-stock SMS alerts via Twilio</span>
+                    </div>
+
+                    <div class="form-group">
+                      <label class="form-label">Alert WhatsApp Number</label>
+                      <input type="tel" id="setting-alert-whatsapp" class="form-input" placeholder="+1234567890" />
+                      <span class="form-helper">Direct WhatsApp alert format with international country code</span>
+                    </div>
+
+                    <div style="margin: 1.25rem 0; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+                      <div class="form-label" style="margin-bottom: 0.5rem;">Active Channels</div>
+                      
+                      <div style="display: flex; flex-direction: column; gap: 0.625rem;">
+                        <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; cursor: pointer;">
+                          <input type="checkbox" id="setting-enable-email" checked />
+                          <span>Email Notifications (via Cloud Functions / Nodemailer)</span>
+                        </label>
+
+                        <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; cursor: pointer;">
+                          <input type="checkbox" id="setting-enable-sms" />
+                          <span>SMS Text Alerts (via Twilio API)</span>
+                        </label>
+
+                        <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; cursor: pointer;">
+                          <input type="checkbox" id="setting-enable-whatsapp" />
+                          <span>WhatsApp Business Messages (via Twilio API)</span>
+                        </label>
+
+                        <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; cursor: pointer;">
+                          <input type="checkbox" id="setting-enable-inapp" checked />
+                          <span>In-App Dashboard Alerts (Always active)</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div class="form-group">
+                      <label class="form-label">Default Safety Buffer Percentage</label>
+                      <input type="number" id="setting-safety-stock" class="form-input" value="20" min="0" max="100" />
+                      <span class="form-helper">Percentage added to lead-time sales for reorder point (default: 20%)</span>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">
+                      Save Notification Preferences
+                    </button>
+                  </form>
+                </div>
+              </div>
+
+              <!-- Alert History / Logs -->
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-title">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    <span>Recent System Alerts</span>
+                  </div>
+                  <button id="btn-clear-all-alerts" class="btn btn-secondary btn-sm">Clear Dismissed</button>
+                </div>
+                <div class="card-body" style="padding: 0;">
+                  <div id="alerts-history-list">
+                    <!-- Populated by JS -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ================= TAB 8: FIREBASE & DEPLOYMENT GUIDE ================= -->
+          <section id="tab-deployment" class="tab-pane">
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                  <span>Firebase Integration & Cloud Architecture</span>
+                </div>
+                <span class="badge badge-neutral" id="firebase-connection-badge">Local Demo Mode</span>
+              </div>
+              <div class="card-body">
+                <p style="font-size: 0.9rem; color: var(--slate-600); margin-bottom: 1.25rem;">
+                  StockSense connects directly to Google Cloud Firestore, Firebase Authentication, Cloud Functions, and Firebase Hosting.
+                  You can enter your Firebase project keys below to connect your live database in one click, or deploy using the Firebase CLI.
+                </p>
+
+                <!-- Live Configuration Form -->
+                <div style="background: var(--slate-50); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.5rem;">
+                  <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--slate-900); margin-bottom: 0.5rem;">
+                    Connect Custom Firebase Credentials
+                  </h4>
+                  <p style="font-size: 0.8rem; color: var(--slate-500); margin-bottom: 1rem;">
+                    Paste your web app configuration from Firebase Console (Project Settings &gt; General &gt; Your apps).
+                  </p>
+
+                  <div class="form-grid">
+                    <div class="form-group">
+                      <label class="form-label">API Key</label>
+                      <input type="text" id="cfg-apiKey" class="form-input" placeholder="AIzaSy..." />
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Auth Domain</label>
+                      <input type="text" id="cfg-authDomain" class="form-input" placeholder="project-id.firebaseapp.com" />
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Project ID</label>
+                      <input type="text" id="cfg-projectId" class="form-input" placeholder="project-id" />
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Storage Bucket</label>
+                      <input type="text" id="cfg-storageBucket" class="form-input" placeholder="project-id.appspot.com" />
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Messaging Sender ID</label>
+                      <input type="text" id="cfg-messagingSenderId" class="form-input" placeholder="1234567890" />
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">App ID</label>
+                      <input type="text" id="cfg-appId" class="form-input" placeholder="1:1234567890:web:abcdef" />
+                    </div>
+                  </div>
+
+                  <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
+                    <button id="btn-save-custom-firebase" class="btn btn-primary btn-sm">Save & Connect to Firebase</button>
+                    <button id="btn-reset-to-demo" class="btn btn-secondary btn-sm">Reset to Demo Session</button>
+                  </div>
+                </div>
+
+                <!-- Step by step deployment commands -->
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--slate-900); margin-bottom: 0.75rem;">
+                  Step-by-Step Deployment Instructions (CLI)
+                </h4>
+                <div style="background: var(--slate-900); color: #e2e8f0; font-family: monospace; font-size: 0.85rem; padding: 1rem 1.25rem; border-radius: var(--radius-md); overflow-x: auto; line-height: 1.7;">
+                  <span style="color: #64748b;"># 1. Install Firebase CLI globally</span><br/>
+                  <span style="color: #38bdf8;">npm install -g firebase-tools</span><br/><br/>
+                  <span style="color: #64748b;"># 2. Login and select your Firebase project</span><br/>
+                  <span style="color: #38bdf8;">firebase login</span><br/>
+                  <span style="color: #38bdf8;">firebase use --add YOUR_PROJECT_ID</span><br/><br/>
+                  <span style="color: #64748b;"># 3. Build optimized static assets</span><br/>
+                  <span style="color: #38bdf8;">npm run build</span><br/><br/>
+                  <span style="color: #64748b;"># 4. Deploy rules, Cloud Functions, and Hosting</span><br/>
+                  <span style="color: #38bdf8;">firebase deploy</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+        </div>
+      </main>
+    </div>
+
+    <!-- ================= MODALS ================= -->
+
+    <!-- 1. Add / Edit Product Modal -->
+    <div id="modal-product" class="modal-backdrop">
+      <div class="modal">
+        <div class="modal-header">
+          <h3 class="modal-title" id="modal-product-title">Add New Product</h3>
+          <button class="modal-close" data-close-modal="modal-product">&times;</button>
+        </div>
+        <form id="product-form">
+          <div class="modal-body">
+            <input type="hidden" id="product-form-id" />
+            <div class="form-grid">
+              <div class="form-group form-full">
+                <label class="form-label">Product Name *</label>
+                <input type="text" id="prod-name" class="form-input" required placeholder="e.g. Colombian Espresso Roast 1kg" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">SKU / Code *</label>
+                <input type="text" id="prod-sku" class="form-input" required placeholder="e.g. BEAN-COL-001" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Category *</label>
+                <input type="text" id="prod-category" class="form-input" required placeholder="e.g. Coffee Beans" list="category-datalist" />
+                <datalist id="category-datalist"></datalist>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Initial Quantity *</label>
+                <input type="number" id="prod-quantity" class="form-input" required min="0" value="20" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Reorder Level *</label>
+                <input type="number" id="prod-reorder-level" class="form-input" required min="0" value="15" />
+                <span class="form-helper">Triggers alert when quantity is &le; this</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Cost Price ($) *</label>
+                <input type="number" id="prod-cost-price" class="form-input" required step="0.01" min="0" placeholder="12.50" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Selling / Unit Price ($) *</label>
+                <input type="number" id="prod-unit-price" class="form-input" required step="0.01" min="0" placeholder="24.00" />
+              </div>
+              <div class="form-group form-full">
+                <label class="form-label">Primary Supplier *</label>
+                <select id="prod-supplier-select" class="form-select" required>
+                  <option value="">Select a supplier...</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-close-modal="modal-product">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="btn-save-product">Save Product</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- 2. Record Sale Modal -->
+    <div id="modal-sale" class="modal-backdrop">
+      <div class="modal">
+        <div class="modal-header">
+          <h3 class="modal-title">Record Sale Transaction</h3>
+          <button class="modal-close" data-close-modal="modal-sale">&times;</button>
+        </div>
+        <form id="sale-form">
+          <div class="modal-body">
+            <div class="form-group">
+              <label class="form-label">Select Product *</label>
+              <select id="sale-product-select" class="form-select" required>
+                <option value="">Choose item to sell...</option>
+              </select>
+            </div>
+
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">Available Stock</label>
+                <input type="text" id="sale-available-stock" class="form-input" readonly value="0 units" style="background: var(--slate-100);" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Unit Retail Price</label>
+                <input type="text" id="sale-unit-price" class="form-input" readonly value="$0.00" style="background: var(--slate-100);" />
+              </div>
+            </div>
+
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">Quantity to Sell *</label>
+                <input type="number" id="sale-quantity" class="form-input" required min="1" value="1" />
+                <span class="form-helper" id="sale-stock-warning" style="color: var(--danger); display: none;">Cannot sell more than available stock!</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Sale Date *</label>
+                <input type="date" id="sale-date" class="form-input" required />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Total Sale Amount</label>
+              <div id="sale-total-preview" style="font-size: 1.5rem; font-weight: 800; color: var(--success);">$0.00</div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Transaction Notes (Optional)</label>
+              <input type="text" id="sale-notes" class="form-input" placeholder="e.g. POS Order #4812 - Walk-in customer" />
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-close-modal="modal-sale">Cancel</button>
+            <button type="submit" class="btn btn-success" id="btn-submit-sale">
+              Process & Decrement Inventory
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- 3. Add / Edit Supplier Modal -->
+    <div id="modal-supplier" class="modal-backdrop">
+      <div class="modal">
+        <div class="modal-header">
+          <h3 class="modal-title" id="modal-supplier-title">Add Supplier</h3>
+          <button class="modal-close" data-close-modal="modal-supplier">&times;</button>
+        </div>
+        <form id="supplier-form">
+          <div class="modal-body">
+            <input type="hidden" id="supplier-form-id" />
+            <div class="form-group">
+              <label class="form-label">Supplier Name *</label>
+              <input type="text" id="sup-name" class="form-input" required placeholder="e.g. Andean Origin Roasters Ltd" />
+            </div>
+
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">Contact Email *</label>
+                <input type="email" id="sup-email" class="form-input" required placeholder="orders@andeanorigin.com" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Phone Number</label>
+                <input type="tel" id="sup-phone" class="form-input" placeholder="+1 (555) 234-5678" />
+              </div>
+            </div>
+
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">WhatsApp Number</label>
+                <input type="tel" id="sup-whatsapp" class="form-input" placeholder="15552345678" />
+                <span class="form-helper">For 1-click WhatsApp supplier messaging</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Lead Time (Days) *</label>
+                <input type="number" id="sup-lead-time" class="form-input" required min="1" value="7" />
+                <span class="form-helper">Used by the automated reorder formula</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Notes & Terms</label>
+              <textarea id="sup-notes" class="form-textarea" rows="2" placeholder="e.g. Minimum order 10kg, payment terms Net-30"></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-close-modal="modal-supplier">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="btn-save-supplier">Save Supplier</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- 4. Create Purchase Order Modal -->
+    <div id="modal-purchase-order" class="modal-backdrop">
+      <div class="modal">
+        <div class="modal-header">
+          <h3 class="modal-title">Create Supplier Purchase Order</h3>
+          <button class="modal-close" data-close-modal="modal-purchase-order">&times;</button>
+        </div>
+        <form id="purchase-order-form">
+          <div class="modal-body">
+            <div class="form-group">
+              <label class="form-label">Select Product to Reorder *</label>
+              <select id="po-product-select" class="form-select" required>
+                <option value="">Choose item...</option>
+              </select>
+            </div>
+
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">Supplier *</label>
+                <input type="text" id="po-supplier-name" class="form-input" readonly style="background: var(--slate-100);" />
+                <input type="hidden" id="po-supplier-id" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Lead Time</label>
+                <input type="text" id="po-lead-time-display" class="form-input" readonly style="background: var(--slate-100);" value="7 days" />
+              </div>
+            </div>
+
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">Order Quantity *</label>
+                <input type="number" id="po-quantity" class="form-input" required min="1" value="50" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Unit Cost Price ($) *</label>
+                <input type="number" id="po-unit-cost" class="form-input" required step="0.01" min="0" placeholder="12.00" />
+              </div>
+            </div>
+
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">Expected Delivery Date</label>
+                <input type="date" id="po-expected-date" class="form-input" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Order Total Cost</label>
+                <div id="po-total-cost-preview" style="font-size: 1.35rem; font-weight: 800; color: var(--primary); margin-top: 0.25rem;">$0.00</div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-close-modal="modal-purchase-order">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="btn-submit-po">Issue Purchase Order</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- 5. Quick Stock Adjustment Modal -->
+    <div id="modal-adjust-stock" class="modal-backdrop">
+      <div class="modal">
+        <div class="modal-header">
+          <h3 class="modal-title">Manual Stock Adjustment</h3>
+          <button class="modal-close" data-close-modal="modal-adjust-stock">&times;</button>
+        </div>
+        <form id="adjust-stock-form">
+          <div class="modal-body">
+            <input type="hidden" id="adjust-product-id" />
+            <div class="form-group">
+              <label class="form-label">Product</label>
+              <div id="adjust-product-name" style="font-weight: 700; color: var(--slate-800);"></div>
+            </div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">Current Stock</label>
+                <input type="text" id="adjust-current-qty" class="form-input" readonly style="background: var(--slate-100);" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">New Accurate Quantity *</label>
+                <input type="number" id="adjust-new-qty" class="form-input" required min="0" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Reason for Adjustment</label>
+              <select id="adjust-reason" class="form-select">
+                <option value="Physical count discrepancy">Physical count discrepancy</option>
+                <option value="Damaged / Expired stock write-off">Damaged / Expired stock write-off</option>
+                <option value="Customer return / restock">Customer return / restock</option>
+                <option value="Internal usage / sample">Internal usage / sample</option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-close-modal="modal-adjust-stock">Cancel</button>
+            <button type="submit" class="btn btn-primary">Update Stock Level</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- 6. Firebase Email/Password Auth Modal / Overlay -->
+    <div id="auth-modal" class="auth-overlay" style="display: none;">
+      <div class="auth-card">
+        <div class="auth-logo">
+          <div class="brand-icon" style="width: 40px; height: 40px; font-size: 1.2rem;">SS</div>
+          <span style="font-size: 1.4rem; font-weight: 800; color: var(--slate-900);">StockSense</span>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--slate-500); margin-bottom: 1.25rem;">
+          Sign in to access your business inventory and sales. Each user sees only their own business records.
+        </p>
+
+        <div class="auth-tabs">
+          <button id="auth-tab-login" class="auth-tab-btn active">Sign In</button>
+          <button id="auth-tab-signup" class="auth-tab-btn">Create Account</button>
+        </div>
+
+        <form id="auth-form" style="text-align: left;">
+          <div class="form-group">
+            <label class="form-label">Business Email</label>
+            <input type="email" id="auth-email" class="form-input" required placeholder="owner@business.com" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <input type="password" id="auth-password" class="form-input" required placeholder="Minimum 6 characters" />
+          </div>
+
+          <button type="submit" id="btn-auth-submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">
+            Sign In to StockSense
+          </button>
+        </form>
+
+        <div style="margin: 1.25rem 0; display: flex; align-items: center; gap: 0.5rem;">
+          <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
+          <span style="font-size: 0.75rem; color: var(--slate-400); text-transform: uppercase;">or quick test</span>
+          <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
+        </div>
+
+        <button id="btn-enter-demo-mode" class="btn btn-secondary" style="width: 100%;">
+          Launch Local Interactive Demo (No Firebase login required)
+        </button>
+      </div>
+    </div>
+
+    <!-- Application Vanilla JavaScript Module -->
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

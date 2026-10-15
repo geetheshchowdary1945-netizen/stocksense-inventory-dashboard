@@ -1,0 +1,81 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default Deny All Catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128;
+    }
+
+    // Users namespace
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+
+      // Products subcollection
+      match /products/{productId} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId)
+          && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 150
+          && request.resource.data.sku is string && request.resource.data.sku.size() > 0 && request.resource.data.sku.size() <= 60
+          && request.resource.data.category is string && request.resource.data.category.size() <= 60
+          && request.resource.data.quantity is number && request.resource.data.quantity >= 0
+          && request.resource.data.unitPrice is number && request.resource.data.unitPrice >= 0
+          && request.resource.data.costPrice is number && request.resource.data.costPrice >= 0
+          && request.resource.data.reorderLevel is number && request.resource.data.reorderLevel >= 0;
+      }
+
+      // Sales subcollection
+      match /sales/{saleId} {
+        allow read, delete: if isOwner(userId);
+        allow create: if isOwner(userId)
+          && request.resource.data.productId is string && request.resource.data.productId.size() > 0
+          && request.resource.data.quantity is number && request.resource.data.quantity > 0
+          && request.resource.data.unitPrice is number && request.resource.data.unitPrice >= 0
+          && request.resource.data.totalAmount is number && request.resource.data.totalAmount >= 0;
+        allow update: if isOwner(userId);
+      }
+
+      // Suppliers subcollection
+      match /suppliers/{supplierId} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId)
+          && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 150
+          && request.resource.data.leadTimeDays is number && request.resource.data.leadTimeDays >= 0;
+      }
+
+      // Purchase Orders subcollection
+      match /purchaseOrders/{orderId} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId)
+          && request.resource.data.productId is string && request.resource.data.productId.size() > 0
+          && request.resource.data.quantity is number && request.resource.data.quantity > 0
+          && request.resource.data.status in ['Pending', 'Shipped', 'Received', 'Cancelled'];
+      }
+
+      // Alerts subcollection
+      match /alerts/{alertId} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId)
+          && request.resource.data.type in ['low_stock', 'out_of_stock', 'overstock', 'order_delayed']
+          && request.resource.data.status in ['unread', 'read', 'dismissed'];
+      }
+
+      // Settings subcollection
+      match /settings/{settingId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+  }
+}
